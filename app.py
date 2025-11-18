@@ -93,8 +93,8 @@ def index():
     ).fetchall()
     conn.commit()
     conn.close()
-    #return render_template("index.html", items=items)
-    return render_template("demo.html")
+    return render_template("index.html", items=items)
+    
 
 # ---------- Authentication ----------
 @app.route("/register", methods=["GET", "POST"])
