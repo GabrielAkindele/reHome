@@ -24,6 +24,9 @@ from flask import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from flask_wtf import CSRFProtect
+from flask_wtf.csrf import generate_csrf
+
 
 # --------------------
 # Configuration
@@ -46,9 +49,26 @@ except Exception:
 os.makedirs(app.config.get('UPLOAD_FOLDER', 'static/uploads'), exist_ok=True)
 
 # convenience
+SECRET_KEY =app.config.get("SECRET_KEY", "rehome")
 DB_PATH = app.config.get('DATABASE', 'db/rehome.db')
 UPLOAD_FOLDER = app.config.get('UPLOAD_FOLDER', 'static/uploads')
 ALLOWED_EXT = set(app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg', 'gif'}))
+
+siteName = "ReHome"
+app.secret_key = SECRET_KEY  # Required for CSRF protection
+csrf = CSRFProtect(app)  # This automatically protects all POST routes
+# Set the site name in the app context
+@app.context_processor
+def inject_site_name():
+    return dict(siteName=siteName)
+
+
+# Create the csrf_token global variable
+@app.context_processor
+def inject_csrf_token():
+    return dict(csrf_token=generate_csrf())
+
+
 
 # --------------------
 # Helpers
@@ -97,14 +117,17 @@ def index():
     
 
 # ---------- Authentication ----------
-@app.route("/register", methods=["GET", "POST"])
+@app.route("/register/", methods=("GET", "POST"))
 def register():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
+        confirm_password = request.form.get("ConfirmPassword","")
+        
+        
 
-        if not name or not email or not password:
+        if not name or not email or not password or not confirm_password:
             flash("Please fill in all required fields.", "danger")
             return redirect(url_for("register"))
 
