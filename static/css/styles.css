@@ -1,14 +1,14 @@
 body {
-  background-color: #f8f9fa;
+  background-color: lightgray;
   color: #212529;
 }
 
 /* Main content area */
 #main-content {
-  background-color: rgba(26, 26, 26, 0.06);
-  padding: 30px;
+  background-color: lightgrey;
+  padding: 10px;
   border-radius: 10px 0 0 10px;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 /* Sidebar */
@@ -31,14 +31,4 @@ body {
 footer {
   color: #cccccc;
   width: 100%;
-}
-
-table th {
-  background-color: #28a745;
-  color: #fff;
-}
-
-table td,
-table th {
-  vertical-align: middle;
 }

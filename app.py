@@ -22,6 +22,7 @@ from flask import (
     Flask, render_template, request, redirect, url_for,
     flash, session, send_from_directory, abort
 )
+from logics.logic import get_db, categories, conditions
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_wtf import CSRFProtect
@@ -70,16 +71,14 @@ def inject_csrf_token():
 
 
 
-# --------------------
-# Helpers
-# --------------------
-def get_db():
-    """Return a sqlite3 connection with row factory as dict-like access."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    # enable foreign keys
-    conn.execute("PRAGMA foreign_keys = ON;")
-    return conn
+
+# def get_db():
+#     """Return a sqlite3 connection with row factory as dict-like access."""
+#     conn = sqlite3.connect(DB_PATH)
+#     conn.row_factory = sqlite3.Row
+#     # enable foreign keys
+#     conn.execute("PRAGMA foreign_keys = ON;")
+#     return conn
 
 def allowed_file(filename):
     """Check file extension is allowed."""
@@ -101,16 +100,22 @@ def login_required(func):
 # --------------------
 # Routes
 # --------------------
+
 @app.route("/")
-def index():
+@app.route("/<selectitem>")
+def index(selectitem=None):
     """Homepage: list available items."""
-    conn = get_db()
-    items = conn.execute(
-        "SELECT items.*, users.name AS owner_name "
-        "FROM items JOIN users ON items.user_id = users.id "
-        "WHERE items.status = 'available' "
-        "ORDER BY items.created_at DESC"
-    ).fetchall()
+    items = selectitem
+    conn = get_db(DB_PATH)
+    if not items :
+        items = conn.execute(
+            "SELECT items.*, users.name AS owner_name "
+            "FROM items JOIN users ON items.user_id = users.id "
+            "WHERE items.status = 'available' "
+            "ORDER BY items.created_at DESC"
+        ).fetchall()
+    else:
+        items = conn.execute("select * from items where category = ? ",(selectitem,)).fetchall()
     conn.commit()
     conn.close()
     return render_template("index.html", items=items)
@@ -120,7 +125,7 @@ def index():
 @app.route("/register/", methods=("GET", "POST"))
 def register():
     if request.method == "POST":
-        conn = get_db()
+        conn = get_db(DB_PATH)
         error = None
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()
@@ -165,7 +170,7 @@ def login():
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
 
-        conn = get_db()
+        conn = get_db(DB_PATH)
         user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
         conn.close()
 
@@ -193,13 +198,13 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    conn = get_db()
+    conn = get_db(DB_PATH)
     items = conn.execute(
         "SELECT * FROM items WHERE user_id = ? ORDER BY created_at DESC",
         (session["user_id"],)
     ).fetchall()
     conn.close()
-    return render_template("dashboard.html", items=items)
+    return render_template("dashboard.html", items=items, )
 
 
 @app.route("/add-item", methods=["GET", "POST"])
@@ -210,7 +215,11 @@ def add_item():
         description = request.form.get("description", "").strip()
         category = request.form.get("category", "").strip()
         condition = request.form.get("condition", "").strip()
-        location = request.form.get("location", "").strip()
+        
+        
+        location = f'{request.form.get("location", "").strip()} { request.form.get("Postalcode", "").strip()}' 
+       
+        
         image = request.files.get("image")
         image_filename = None
 
@@ -232,7 +241,7 @@ def add_item():
                 flash("Invalid image type. Allowed: png, jpg, jpeg, gif.", "danger")
                 return redirect(url_for("add_item"))
 
-        conn = get_db()
+        conn = get_db(DB_PATH)
         conn.execute(
             "INSERT INTO items (user_id, title, description, category, condition, image_path, location) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -243,12 +252,12 @@ def add_item():
         flash("Item posted successfully.", "success")
         return redirect(url_for("dashboard"))
 
-    return render_template("add_item.html")
+    return render_template("add_item.html",categories = categories, conditions = conditions)
 
 
 @app.route("/item/<int:item_id>")
 def item_detail(item_id):
-    conn = get_db()
+    conn = get_db(DB_PATH)
     item = conn.execute(
         "SELECT items.*, users.name AS owner_name, users.email AS owner_email "
         "FROM items JOIN users ON items.user_id = users.id "
@@ -265,7 +274,7 @@ def item_detail(item_id):
 @login_required
 def request_item(item_id):
     message = request.form.get("message", "").strip()
-    conn = get_db()
+    conn = get_db(DB_PATH)
     item = conn.execute("SELECT * FROM items WHERE id = ? AND status = 'available'", (item_id,)).fetchone()
     if not item:
         conn.close()
@@ -293,7 +302,7 @@ def request_item(item_id):
 def admin_panel():
     if not session.get("is_admin"):
         abort(403)
-    conn = get_db()
+    conn = get_db(DB_PATH)
     users = conn.execute("SELECT id, name, email, is_admin, created_at FROM users ORDER BY created_at DESC").fetchall()
     items = conn.execute(
         "SELECT items.id, items.title, items.status, users.name AS owner_name "
@@ -313,7 +322,7 @@ def admin_panel():
 def admin_delete_item(item_id):
     if not session.get("is_admin"):
         abort(403)
-    conn = get_db()
+    conn = get_db(DB_PATH)
     # optionally remove image file
     item = conn.execute("SELECT image_path FROM items WHERE id = ?", (item_id,)).fetchone()
     if item and item["image_path"]:
@@ -335,7 +344,7 @@ def admin_update_request(req_id, action):
         abort(403)
     if action not in ("approved", "rejected"):
         abort(400)
-    conn = get_db()
+    conn = get_db(DB_PATH)
     conn.execute("UPDATE requests SET status = ? WHERE id = ?", (action, req_id))
     conn.commit()
     # optionally, if approved mark item status as 'claimed'

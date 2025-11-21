@@ -8,14 +8,11 @@ cursor = conn.cursor()
 
 password = hashlib.sha256("admin123".encode()).hexdigest()
 
-cursor.execute("""
-INSERT INTO users (name, email, password, is_admin)
-VALUES (?, ?, ?, 1)
-""", ("Admin", "admin@rehome.com", password))
+results = cursor.execute("select * from items where category = ? ",(None,)).fetchall()
 
 
 
-print("Admin account created.")
+print(results)
 
 conn.commit()
 conn.close()
