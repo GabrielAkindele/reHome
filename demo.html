@@ -9,11 +9,21 @@
 </head>
 
 <body>
-    <h1 id="hh">akindele</h1>
+    <div>
+        <label for="email">Email</label>
+        <input type="text" id="email" name="email">
+        <label id="lbl"></label>
+    </div>
     <script>
-        $(document).ready(function () {
-            $("#hh").css("color", "red")
-        })
+
+        function emailCheck() {
+            $(document).ready($("#email").change(function () {
+                $.get("http://127.0.0.1:5000/api/email/", { data: $(this).val() }, (response) => {
+                    $("#lbl").text(response)
+                })
+            }))
+        }
+        //emailCheck()
     </script>
 </body>
 

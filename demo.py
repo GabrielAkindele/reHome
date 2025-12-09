@@ -9,13 +9,17 @@ cursor = conn.cursor()
 
 # hashed = generate_password_hash("group")
 
+Search = "Groceries"
+items = cursor.execute(
+    "SELECT items.*, users.name AS owner_name "
+    "FROM items JOIN users ON items.user_id = users.id "
+    "WHERE category like ? "
+    "ORDER BY items.created_at DESC",
+    ("{}%".format(Search),),
+).fetchall()
 
-conn.execute(
-    "DELETE from requests WHERE item_id = 1",
-).fetchone()
 
-
-# print(selectitem)
+print(items)
 
 conn.commit()
 conn.close()

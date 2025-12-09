@@ -17,8 +17,10 @@ Before running:
 """
 
 import os
+from re import search
 import sqlite3
 from functools import wraps
+from urllib.request import Request
 from flask import (
     Flask,
     render_template,
@@ -35,12 +37,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_wtf import CSRFProtect
 from flask_wtf.csrf import generate_csrf
+from flask_cors import CORS
 
+error = None
 
 # --------------------
 # Configuration
 # --------------------
 app = Flask(__name__, instance_relative_config=True)
+CORS(app)
 
 # load instance config if present; fallback defaults
 try:
@@ -91,6 +96,20 @@ def inject_csrf_token():
 #     return conn
 
 
+@app.route("/api/email/")
+def email():
+    # error = None
+    conn = get_db(DB_PATH)
+    email_valid = request.args.get("data", "").strip().lower()
+    user = conn.execute(
+        "SELECT * FROM users WHERE email = ?", (email_valid,)
+    ).fetchone()
+    if user:
+        error = f"Email {email_valid} already registered"
+        return error
+    return ""
+
+
 def allowed_file(filename):
     """Check file extension is allowed."""
     if not filename:
@@ -117,51 +136,72 @@ def login_required(func):
 # --------------------
 
 
+@app.route("/search", methods=("GET", "POST"))
 @app.route("/")
 @app.route("/<selectitem>")
 def index(selectitem=None):
     """Homepage: list available items."""
     items = selectitem
     conn = get_db(DB_PATH)
-    if not items:
-        items = conn.execute(
-            "SELECT items.*, users.name AS owner_name "
-            "FROM items JOIN users ON items.user_id = users.id "
-            "WHERE items.status = 'available' "
-            "ORDER BY items.created_at DESC"
-        ).fetchall()
+    if request.method == "POST":
+        Search = request.form.get("search", "").strip().lower()
+        if not Search:
+            items = conn.execute(
+                "SELECT items.*, users.name AS owner_name "
+                "FROM items JOIN users ON items.user_id = users.id "
+                "WHERE items.status = 'available' "
+                "ORDER BY items.created_at DESC"
+            ).fetchall()
+        else:
+            items = conn.execute(
+                "SELECT items.*, users.name AS owner_name "
+                "FROM items JOIN users ON items.user_id = users.id "
+                "WHERE category like ? "
+                "ORDER BY items.created_at DESC",
+                ("{}%".format(Search),),
+            ).fetchall()
     else:
-        items = conn.execute(
-            "SELECT items.*, users.name AS owner_name "
-            "FROM items JOIN users ON items.user_id = users.id "
-            "WHERE category = ? "
-            "ORDER BY items.created_at DESC",
-            (selectitem,),
-        ).fetchall()
+        if not items:
+            items = conn.execute(
+                "SELECT items.*, users.name AS owner_name "
+                "FROM items JOIN users ON items.user_id = users.id "
+                "WHERE items.status = 'available' "
+                "ORDER BY items.created_at DESC"
+            ).fetchall()
+
+        else:
+            items = conn.execute(
+                "SELECT items.*, users.name AS owner_name "
+                "FROM items JOIN users ON items.user_id = users.id "
+                "WHERE category = ? "
+                "ORDER BY items.created_at DESC",
+                (selectitem,),
+            ).fetchall()
     conn.commit()
     conn.close()
     return render_template("index.html", categories=categories, items=items)
 
 
 # ---------- Authentication ----------
+
+
 @app.route("/register/", methods=("GET", "POST"))
 def register():
+
     if request.method == "POST":
+        # error = None
         conn = get_db(DB_PATH)
-        error = None
         name = request.form.get("name", "").strip()
+
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         confirm_password = request.form.get("ConfirmPassword", "")
-
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
 
         if not name or not email or not password or not confirm_password:
             error = "Please fill in all required fields."
         elif password != confirm_password:
             error = "Passwords do not match!"
-        elif user:
-            error = f"Email {email} already exits"
+
         if error is None:
 
             hashed = generate_password_hash(password)
@@ -430,4 +470,4 @@ if __name__ == "__main__":
     # ensure secret key available in session
     app.secret_key = app.config.get("SECRET_KEY", os.urandom(24))
     # debug True only for development — remove in production
-    # app.run(debug=True)
+    app.run(debug=True)
