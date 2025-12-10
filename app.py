@@ -250,7 +250,7 @@ def login():
     return render_template("login.html")
 
 
-@app.route("/logout")
+@app.route("/logout/")
 def logout():
     session.clear()
     flash("You have been logged out.", "info")
@@ -266,11 +266,15 @@ def dashboard():
         "SELECT * FROM items WHERE user_id = ? ORDER BY created_at DESC",
         (session["user_id"],),
     ).fetchall()
+    request_items = conn.execute(
+        "SELECT requests.id, requests.status, requests.message, requests.created_at, items.title as item_title, u.name as requester_name, items.image_path "
+        "FROM requests JOIN items ON requests.item_id = items.id JOIN users u ON requests.requester_id = u.id "
+        "where u.id = ? "
+        "ORDER BY requests.created_at DESC",
+        (session["user_id"],),
+    ).fetchall()
     conn.close()
-    return render_template(
-        "dashboard.html",
-        items=items,
-    )
+    return render_template("dashboard.html", items=items, request_items=request_items)
 
 
 @app.route("/add-item", methods=["GET", "POST"])

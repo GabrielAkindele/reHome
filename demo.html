@@ -17,13 +17,10 @@
     <script>
 
         function emailCheck() {
-            $(document).ready($("#email").change(function () {
-                $.get("http://127.0.0.1:5000/api/email/", { data: $(this).val() }, (response) => {
-                    $("#lbl").text(response)
-                })
-            }))
+            alert(document.domain)
         }
-        //emailCheck()
+        emailCheck()
+
     </script>
 </body>
 

@@ -23,7 +23,7 @@
     {% for category in categories.get("categories") %}
 
     <li class="list-group-item">
-      <a href="/{{category}}">{{category}}</a>
+      <a style="text-decoration: none" href="/{{category}}">{{category}}</a>
     </li>
 
     {% endfor %}
@@ -68,6 +68,12 @@
         <p class="card-text text-truncate">{{ item['description'] or '' }}</p>
         <p class="mt-auto mb-1 small text-muted">
           Owner: {{ item['owner_name'] }}
+        </p>
+        <p class="mt-auto mb-1 small text-muted">
+          Status: {{ item['status'] }}
+        </p>
+        <p class="mt-auto mb-1 small text-muted">
+          Posted: {{ item['created_at'] }}
         </p>
         <div class="d-flex gap-2">
           <a

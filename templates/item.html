@@ -36,7 +36,10 @@
           <label class="form-label">Message to owner (optional)</label>
           <textarea class="form-control" name="message" rows="3"></textarea>
         </div>
-        <button class="btn btn-primary m-3">Request this item</button>
+        <div class="d-flex">
+          <button class="btn btn-primary m-3">Request</button>
+          <a href="/" class="btn btn-primary m-3">Cancel</a>
+        </div>
       </form>
       {% elif not session.get('user_id') %}
       <p>
