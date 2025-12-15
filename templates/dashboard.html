@@ -1,22 +1,20 @@
 {% extends "base.html" %} {% block content %}
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h3 style="color: tomato">My Dashboard</h3>
-  <a class="btn btn-outline-secondary" href="{{ url_for('add_item') }}"
-    >Add new</a
-  >
+  <a class="btn btn-outline-secondary" href="{{ url_for('add_item') }}">Add new</a>
 </div>
+
+
 
 <div class="row">
   <h5 class="text-info mb-3">My Listing Items</h5>
   {% if items %} {% for item in items %}
-  <div class="col-md-2 mb-3">
+  <div class="col-md-4 mb-3">
     <div class="card h-100">
       {% if item['image_path'] %}
-      <img
-        src="{{ url_for('uploaded_file', filename=item['image_path']) }}"
-        class="card-img-top"
-        style="height: 180px; object-fit: cover"
-      />
+      <img src="{{ url_for('uploaded_file', filename=item['image_path']) }}" class="card-img-top"
+        style="height: 180px; object-fit: cover" />
       {% endif %}
       <div class="card-body d-flex flex-column">
         <h5 class="card-title">{{ item['title'] }}</h5>
@@ -43,14 +41,11 @@
 <div class="row">
   <h5 class="text-primary mb-3">My Requested Items</h5>
   {% if request_items %} {% for request_item in request_items %}
-  <div class="col-md-2 mb-3">
+  <div class="col-md-4 mb-3">
     <div class="card h-100">
       {% if request_item['image_path'] %}
-      <img
-        src="{{ url_for('uploaded_file', filename=request_item['image_path']) }}"
-        class="card-img-top"
-        style="height: 180px; object-fit: cover"
-      />
+      <img src="{{ url_for('uploaded_file', filename=request_item['image_path']) }}" class="card-img-top"
+        style="height: 180px; object-fit: cover" />
       {% endif %}
       <div class="card-body d-flex flex-column">
         <h5 class="card-title">{{ request_item['item_title'] }}</h5>
@@ -60,9 +55,7 @@
           {% if request_item['status'] == "approved" %}
           <a class="btn btn-outline-secondary btn-sm" href="#">View Contacts</a>
           {%else%}
-          <a class="btn btn-outline-secondary btn-sm" href="#"
-            >Cancle Request</a
-          >
+          <a class="btn btn-outline-secondary btn-sm" href="#">Cancle Request</a>
           {%endif%}
         </div>
       </div>

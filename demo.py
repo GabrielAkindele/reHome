@@ -13,13 +13,12 @@ Search = "Groceries"
 items = cursor.execute(
     "SELECT items.*, users.name AS owner_name "
     "FROM items JOIN users ON items.user_id = users.id "
-    "WHERE category like ? "
-    "ORDER BY items.created_at DESC",
-    ("{}%".format(Search),),
+    "WHERE items.status = 'available' "
+    "ORDER BY items.created_at DESC "
 ).fetchall()
 
-
-print(items)
+for item in items[0:4]:
+    print(item[6])
 
 conn.commit()
 conn.close()
